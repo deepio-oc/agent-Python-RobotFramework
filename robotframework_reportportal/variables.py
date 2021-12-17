@@ -12,7 +12,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from os import getenv
+from os import getenv, path
 from distutils.util import strtobool
 
 from robot.libraries.BuiltIn import BuiltIn, RobotNotRunningError
@@ -47,8 +47,12 @@ class Variables(object):
         self._pabot_used = None
         self._project = None
         self._uuid = None
+        self.attach_log = strtobool(get_variable(
+            'RP_ATTACH_LOG', default='False'))
         self.attach_report = strtobool(get_variable(
-            'RP_ATTACH_REPORT', default='True'))
+            'RP_ATTACH_REPORT', default='False'))
+        self.attach_xunit = strtobool(get_variable(
+            'RP_ATTACH_XUNIT', default='False'))
         self.launch_attributes = get_variable(
             'RP_LAUNCH_ATTRIBUTES', default='').split()
         self.launch_id = get_variable('RP_LAUNCH_UUID')
@@ -57,6 +61,9 @@ class Variables(object):
             'RP_LOG_BATCH_SIZE', default='20'))
         self.mode = get_variable('RP_MODE')
         self.pool_size = int(get_variable('RP_MAX_POOL_SIZE', default='50'))
+        self.rerun = strtobool(get_variable(
+            'RP_RERUN', default='False'))
+        self.rerun_of = get_variable('RP_RERUN_OF', default=None)
         self.skip_analytics = getenv('AGENT_NO_ANALYTICS')
         self.skipped_issue = strtobool(get_variable(
             'RP_SKIPPED_ISSUE', default='True'))
@@ -138,3 +145,11 @@ class Variables(object):
                 'Missing parameter RP_UUID for robot run\n'
                 'You should pass -v RP_UUID:<uuid_value>')
         return self._uuid
+
+    @property
+    def verify_ssl(self):
+        """Get value of the verify_ssl parameter for the client."""
+        verify_ssl = get_variable('RP_VERIFY_SSL', default='True')
+        if path.exists(verify_ssl):
+            return verify_ssl
+        return bool(strtobool(verify_ssl))

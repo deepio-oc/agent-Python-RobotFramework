@@ -68,7 +68,7 @@ class RobotService(object):
         return attributes + _dict_to_payload(system_attributes)
 
     def init_service(self, endpoint, project, uuid, log_batch_size, pool_size,
-                     skipped_issue=True):
+                     skipped_issue=True, verify_ssl=True):
         """Initialize common reportportal client.
 
         :param endpoint:       Report Portal API endpoint
@@ -78,6 +78,7 @@ class RobotService(object):
         :param pool_size:      HTTPAdapter max pool size
         :param skipped_issue   Mark skipped test items with 'To Investigate',
                                default value 'True'
+        :param verify_ssl:     Disable SSL verification
         """
         if self.rp is None:
             logger.debug(
@@ -90,7 +91,9 @@ class RobotService(object):
                 token=uuid,
                 log_batch_size=log_batch_size,
                 max_pool_size=pool_size,
-                is_skipped_an_issue=skipped_issue)
+                is_skipped_an_issue=skipped_issue,
+                verify_ssl=verify_ssl
+            )
         else:
             raise RobotServiceException(
                 'RobotFrameworkService is already initialized.')
@@ -100,11 +103,15 @@ class RobotService(object):
         if self.rp is not None:
             self.rp.terminate()
 
-    def start_launch(self, launch, mode=None, ts=None, skip_analytics=False):
+    def start_launch(self, launch, mode=None, rerun=False, rerun_of=None,
+                     ts=None, skip_analytics=False):
         """Call start_launch method of the common client.
 
         :param launch:         Instance of the Launch class
         :param mode:           Launch mode
+        :param rerun:          Rerun mode. Allowable values 'True' of 'False'
+        :param rerun_of:       Rerun mode. Specifies launch to be re-runned.
+                               Should be used with the 'rerun' option.
         :param ts:             Start time
         :param skip_analytics: Skip reporting of agent name and version to GA?
         :return:               launch UUID
@@ -114,6 +121,8 @@ class RobotService(object):
             'description': launch.doc,
             'name': launch.name,
             'mode': mode,
+            'rerun': rerun,
+            'rerunOf': rerun_of,
             'start_time': ts or to_epoch(launch.start_time) or timestamp()
         }
         logger.debug(
@@ -257,7 +266,7 @@ class RobotService(object):
         sl_rq = {
             'attachment': message.attachment,
             'item_id': message.item_id,
-            'level': LOG_LEVEL_MAPPING[message.level],
+            'level': LOG_LEVEL_MAPPING.get(message.level, 'INFO'),
             'message': message.message,
             'time': ts or timestamp()
         }
